@@ -1,4 +1,5 @@
 ==========ELASTIFLOW INSTALLATION on UBUNTU 22.4
+***Don't forget to reserve high ram like 16gb for the server. Configure kibana jvm heap as 8gb, logstash 4gb or even more. 
 
 ----Install Elasticsearch
 curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elastic.gpg
