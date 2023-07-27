@@ -1,0 +1,102 @@
+==========ELASTIFLOW INSTALLATION
+
+----Install Elasticsearch
+curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elastic.gpg
+echo "deb [signed-by=/usr/share/keyrings/elastic.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+
+sudo apt-get install apt-transport-https
+
+sudo apt update
+sudo apt install elasticsearch
+
+
+--sudo nano /etc/elasticsearch/elasticsearch.yml
+
+cluster.name:  cluster ismi tanımlanacak örnek "ELK" gibi
+node.name: ${HOSTNAME}
+bootstrap.memory_lock: true
+network.host: 0.0.0.0
+http.port : 9200
+Discovery.seed_hosts: ["127.0.0.1"]
+discovery.type: single-node
+
+----Enable elastic search
+systemctl daemon-reload
+systemctl start elasticsearch
+systemctl enable elasticsearch
+systemctl status elasticsearch
+
+-----sudo nano /etc/elasticsearch/jvm.options (depends on ram, default is 4g)
+
+-Xms12g
+-Xmx12g
+
+---Install kibana
+apt install kibana -y 
+
+----nano /etc/kibana/kibana.yml
+server.host: your-server-ip
+elasticsearch.hosts: ["http://localhost:9200"]
+
+
+---CONFIGURE NGNIX
+???
+
+
+
+
+---Enable Kibana
+systemctl start kibana
+systemctl enable kibana
+systemctl status kibana
+
+----Install Logstash
+sudo apt install logstash -y
+
+---Give logstash ram on JVM (default 1g)
+sudo nano /etc/logstash/jvm.options
+
+-Xms6g
+-Xms6g
+
+---Enable logstash
+systemctl start logstash 
+systemctl enable logstash
+systemctl status logstash
+
+---Install logstash addons necessary for elastiflow
+
+sudo /usr/share/logstash/bin/logstash-plugin install logstash-codec-sflow
+sudo /usr/share/logstash/bin/logstash-plugin update logstash-codec-netflow
+sudo /usr/share/logstash/bin/logstash-plugin update logstash-input-udp
+sudo /usr/share/logstash/bin/logstash-plugin update logstash-input-tcp
+sudo /usr/share/logstash/bin/logstash-plugin update logstash-filter-dns
+sudo /usr/share/logstash/bin/logstash-plugin update logstash-filter-geoip
+sudo /usr/share/logstash/bin/logstash-plugin update logstash-filter-translate
+
+----Install Elastiflow
+sudo wget https://github.com/robcowart/elastiflow/archive/v4.0.1.tar.gz
+tar xzvf v4.0.1.tar.gz
+cp -a elastiflow-4.0.1/logstash.service.d/. /etc/systemd/system/logstash.service.d/
+
+--sudo nano /etc/logstash/pipelines.yml
+- pipeline.id: elastiflow
+  path.config: "/etc/logstash/elastiflow/conf.d/*.conf"
+
+---/etc/systemd/system/logstash.service.d/elastiflow.conf 
+# Name resolution option
+Environment="ELASTIFLOW_RESOLVE_IP2HOST=true"
+Environment="ELASTIFLOW_NAMESERVER=DNS SERVER IP ADRESS"
+#Environment="ELASTIFLOW_ES_HOST_1=127.0.0.1:9200"
+#Environment="ELASTIFLOW_ES_HOST_2=127.0.0.2:9200"
+#Environment="ELASTIFLOW_ES_HOST_3=127.0.0.3:9200"
+
+---enable elastiflow
+systemctl daemon-reload
+systemctl restart logstash
+systemctl status elastiflow
+
+---login http://serverip:5601 
+download file: https://github.com/robcowart/elastiflow/blob/master/kibana/elastiflow.kibana.7.8.x.ndjson
+
+management - stack management - kibana - saved objects - import 
